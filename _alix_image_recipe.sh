@@ -7,7 +7,7 @@ NEW_IMAGE=1
 
 DEBIAN_MIRROR=http://httpredir.debian.org/debian/
 # add here what you need
-DEBIAN_INSTALL_PACKAGES="apt-utils iproute dhcpcd5 ifupdown wget sudo nano openssh-client openssh-server pciutils iputils-ping"
+DEBIAN_INSTALL_PACKAGES="apt-utils iproute isc-dhcp-client ifupdown wget sudo nano openssh-client openssh-server pciutils iputils-ping"
 # note: 686-pae won't run on the ALIX2 as the AMD Geode doesn't offer PEA (the Debian package info for 3.16.0-4-686-PAE is wrong)
 DEBIAN_KERNEL_VERSION="3.16.0-4-586"
 DEBIAN_UPDATE_INITRAMFS=0
@@ -91,17 +91,29 @@ tmpfs                          /tmp            tmpfs   defaults,noatime         
 tmpfs                          /var/tmp        tmpfs   defaults,noatime                0       0
 EOF
 
-echo "set network config (all DHCP)..."
+echo "set network config (eth0@DHCP, eth1@10.0.0.123/24, eth2@192.168.0.123/24)..."
 cat << EOF > ${CHROOT_DIR}/etc/network/interfaces
 auto lo
 iface lo inet loopback
 
+source /etc/network/interfaces.d/*.cfg
+EOF
+
+cat << EOF > ${CHROOT_DIR}/etc/network/interfaces.d/eth0.cfg
 auto eth0
 iface eth0 inet dhcp
+EOF
+cat << EOF > ${CHROOT_DIR}/etc/network/interfaces.d/eth1.cfg
 auto eth1
-iface eth1 inet dhcp
+iface eth1 inet static
+	address 10.0.0.123
+	netmask 24
+EOF
+cat << EOF > ${CHROOT_DIR}/etc/network/interfaces.d/eth2.cfg
 auto eth2
-iface eth2 inet dhcp
+iface eth2 inet static
+	address 192.168.0.123
+	netmask 24
 EOF
 
 # prepare chroot
@@ -192,7 +204,7 @@ grub-install --target=i386-pc --modules="ext2 part_msdos" --root-directory="${CH
 echo "create grub menu..."
 cat << EOF > ${CHROOT_DIR}/etc/default/grub
 GRUB_DEFAULT=0
-GRUB_TIMEOUT=5
+GRUB_TIMEOUT=0
 GRUB_DISTRIBUTOR="Debian Jessie 8.2"
 
 GRUB_CMDLINE_LINUX_DEFAULT="quiet"
