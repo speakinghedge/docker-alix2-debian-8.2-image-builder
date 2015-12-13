@@ -19,14 +19,14 @@ You can change most of these attributes in the head section of *_alix_image_reci
 ## usage
 
 1. run build
-```
->./build.sh
-...creates docker container if needed
-...builds image running *_alix_image_recipe.sh* insider the docker container
-```
+   ```
+   >./build.sh
+   ...creates docker container if needed
+   ...builds image running *_alix_image_recipe.sh* insider the docker container
+   ```
 
 2. copy the image on the CF card
-```
->dd if=alix2_debian_jessie.img of=<path-to-CF-drive> bs=1M
-...
-```
+   ```
+   >dd if=alix2_debian_jessie.img of=<path-to-CF-drive> bs=1M
+   ...
+   ```
