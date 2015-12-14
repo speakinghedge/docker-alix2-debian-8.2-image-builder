@@ -6,8 +6,10 @@ CHROOT_DIR=/tmp/chroot
 NEW_IMAGE=1
 
 DEBIAN_MIRROR=http://httpredir.debian.org/debian/
+# keep this unless you know what you do
+DEBIAN_BASE_PACKAGES="debconf grub2 busybox initramfs-tools"
 # add here what you need
-DEBIAN_INSTALL_PACKAGES="apt-utils iproute isc-dhcp-client ifupdown wget sudo nano openssh-client openssh-server pciutils iputils-ping"
+DEBIAN_ADDITIONAL_PACKAGES="apt-utils iproute isc-dhcp-client ifupdown wget sudo nano openssh-client openssh-server pciutils iputils-ping"
 # note: 686-pae won't run on the ALIX2 as the AMD Geode doesn't offer PEA (the Debian package info for 3.16.0-4-686-PAE is wrong)
 DEBIAN_KERNEL_VERSION="3.16.0-4-586"
 # shrink the initrd from 14M to 3.7M
@@ -133,7 +135,7 @@ grub-pc grub-pc/install_devices multiselect
 EOF2
 
 	echo "install base packages..."
-	for package in debconf grub2 initramfs-tools ${DEBIAN_INSTALL_PACKAGES} 
+	for package in ${DEBIAN_BASE_PACKAGES} ${DEBIAN_ADDITIONAL_PACKAGES} 
 	do
 		echo -n "  \${package} ..."
 		apt-get --no-install-recommends -y install \$package 1>/dev/null
