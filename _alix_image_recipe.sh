@@ -10,7 +10,8 @@ DEBIAN_MIRROR=http://httpredir.debian.org/debian/
 DEBIAN_INSTALL_PACKAGES="apt-utils iproute isc-dhcp-client ifupdown wget sudo nano openssh-client openssh-server pciutils iputils-ping"
 # note: 686-pae won't run on the ALIX2 as the AMD Geode doesn't offer PEA (the Debian package info for 3.16.0-4-686-PAE is wrong)
 DEBIAN_KERNEL_VERSION="3.16.0-4-586"
-DEBIAN_UPDATE_INITRAMFS=0
+# shrink the initrd from 14M to 3.7M
+DEBIAN_UPDATE_INITRAMFS=1
 
 # you may set this to larger sizes - eg. 4G (depends on the size of your cf card)
 IMAGE_SIZE=1900M
@@ -230,6 +231,46 @@ EOF
 
 if [ ${DEBIAN_UPDATE_INITRAMFS} -ne 0 ] ; then
 	echo "update initramfs..."
+
+# set minimal set of required modules
+cat << EOF > ${CHROOT_DIR}/etc/initramfs-tools/modules
+evdev
+scx200_acb
+i2c_core
+cs5535_mfgpt
+pcspkr
+ecb
+cs5535_mfd
+geode_aes
+geode_rng
+rng_core
+autofs4
+ext4
+crc16
+mbcache
+jbd2
+sg
+sd_mod
+crc_t10dif
+crct10dif_generic
+crct10dif_common
+ata_generic
+pata_cs5536
+pata_amd
+ohci_pci
+libata
+ohci_hcd
+ehci_pci
+ehci_hcd
+usbcore
+scsi_mod
+usb_common
+via_rhine
+mii
+EOF
+
+	# force update-initramfs to use our modules list
+	chroot "${CHROOT_DIR}/" sed -i 's/MODULES=[a-z]*/MODULES=list/g' /etc/initramfs-tools/initramfs.conf
 	chroot "${CHROOT_DIR}/" /usr/sbin/update-initramfs -u -k "${DEBIAN_KERNEL_VERSION}"
 fi
 
