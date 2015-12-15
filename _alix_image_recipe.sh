@@ -20,7 +20,7 @@ IMAGE_SIZE=1900M
 IMAGE_NAME=alix2_debian_jessie.img
 IMAGE_PART_OFFSET=1048576
 
-HOSTNAME="alix2"
+HOST_NAME="alix2"
 USER_NAME="user"
 USER_PASSWD="user"
 # set to 0 if user should not be part of group sudo...
@@ -79,47 +79,16 @@ if [ ${NEW_IMAGE} -eq 1 ] ; then
 	debootstrap --arch i386 --variant=minbase jessie "${CHROOT_DIR}" "${DEBIAN_MIRROR}"
 fi
 
-echo "set hostname to ${HOSTNAME}..."
-echo ${HOSTNAME} > ${CHROOT_DIR}/etc/hostname
-cat << EOF > ${CHROOT_DIR}/etc/hosts
-127.0.0.1       localhost
-127.0.1.1       ${HOSTNAME}
-EOF
+# copy contents to target
+echo "copy contents to target..."
+cp -rf contents/* ${CHROOT_DIR}/
+# now replace @HOST_NAME@, @USER_NAME@ if needed...
+for f in $(cd contents && find . -type f); do
+	sed -i "s/@HOST_NAME@/$HOST_NAME/g" "${CHROOT_DIR}/${f}"
+	sed -i "s/@USER_NAME@/$USER_NAME/g" "${CHROOT_DIR}/${f}"
+done
 
-echo "set fstab..."
-cat << EOF > ${CHROOT_DIR}/etc/fstab
-proc                           /proc           proc    defaults                        0       0
-/dev/sda1                      /               ext4    noatime,errors=remount-ro       0       1
-tmpfs                          /tmp            tmpfs   defaults,noatime                0       0
-tmpfs                          /var/tmp        tmpfs   defaults,noatime                0       0
-EOF
-
-echo "set network config (eth0@DHCP, eth1@10.0.0.123/24, eth2@192.168.0.123/24)..."
-cat << EOF > ${CHROOT_DIR}/etc/network/interfaces
-auto lo
-iface lo inet loopback
-
-source /etc/network/interfaces.d/*.cfg
-EOF
-
-cat << EOF > ${CHROOT_DIR}/etc/network/interfaces.d/eth0.cfg
-auto eth0
-iface eth0 inet dhcp
-EOF
-cat << EOF > ${CHROOT_DIR}/etc/network/interfaces.d/eth1.cfg
-auto eth1
-iface eth1 inet static
-	address 10.0.0.123
-	netmask 24
-EOF
-cat << EOF > ${CHROOT_DIR}/etc/network/interfaces.d/eth2.cfg
-auto eth2
-iface eth2 inet static
-	address 192.168.0.123
-	netmask 24
-EOF
-
-# prepare chroot
+# prepare script to be run in chroot
 cat << EOF > "${CHROOT_DIR}/base_setup.sh"
 
 	echo 'debconf debconf/frontend select noninteractive' | debconf-set-selections
@@ -162,7 +131,7 @@ for special_dir in dev dev/pts proc run sys ; do
 	mount -o bind "/${special_dir}" "${CHROOT_DIR}/${special_dir}" 1>/dev/null
 done
 
-echo "chroot..."
+echo "chroot and execute base setup..."
 chmod a+x "${CHROOT_DIR}/base_setup.sh"
 chroot "${CHROOT_DIR}/" "/base_setup.sh"
 
@@ -204,19 +173,6 @@ cat << EOF > ${CHROOT_DIR}/boot/grub/device.map
 EOF
 echo "install grub into ${disk_loop_dev}..."
 grub-install --target=i386-pc --modules="ext2 part_msdos" --root-directory="${CHROOT_DIR}/" --grub-mkdevicemap="${CHROOT_DIR}/boot/grub/device.map" --boot-directory="${CHROOT_DIR}/boot/" "${disk_loop_dev}"
-echo "create grub menu..."
-cat << EOF > ${CHROOT_DIR}/etc/default/grub
-GRUB_DEFAULT=0
-GRUB_TIMEOUT=0
-GRUB_DISTRIBUTOR="Debian Jessie 8.2"
-
-GRUB_CMDLINE_LINUX_DEFAULT="quiet"
-GRUB_CMDLINE_LINUX="console=tty0 console=ttyS0,38400n8"
-
-GRUB_TERMINAL="console serial"
-GRUB_SERIAL_COMMAND="serial --unit=0 --speed=38400 --word=8 --parity=no --stop=1"
-GRUB_RECORDFAIL_TIMEOUT=0
-EOF
 
 chroot "${CHROOT_DIR}/" /usr/sbin/update-grub2
 # the magic of update-grub2 creates a configuration suitable for booting from loop devices
@@ -233,43 +189,6 @@ EOF
 
 if [ ${DEBIAN_UPDATE_INITRAMFS} -ne 0 ] ; then
 	echo "update initramfs..."
-
-# set minimal set of required modules
-cat << EOF > ${CHROOT_DIR}/etc/initramfs-tools/modules
-evdev
-scx200_acb
-i2c_core
-cs5535_mfgpt
-pcspkr
-ecb
-cs5535_mfd
-geode_aes
-geode_rng
-rng_core
-autofs4
-ext4
-crc16
-mbcache
-jbd2
-sg
-sd_mod
-crc_t10dif
-crct10dif_generic
-crct10dif_common
-ata_generic
-pata_cs5536
-pata_amd
-ohci_pci
-libata
-ohci_hcd
-ehci_pci
-ehci_hcd
-usbcore
-scsi_mod
-usb_common
-via_rhine
-mii
-EOF
 
 	# force update-initramfs to use our modules list
 	chroot "${CHROOT_DIR}/" sed -i 's/MODULES=[a-z]*/MODULES=list/g' /etc/initramfs-tools/initramfs.conf

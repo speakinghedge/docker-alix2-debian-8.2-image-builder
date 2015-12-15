@@ -1,0 +1,5 @@
+proc                           /proc           proc    defaults                        0       0
+/dev/sda1                      /               ext4    noatime,errors=remount-ro       0       1
+tmpfs                          /tmp            tmpfs   defaults,noatime                0       0
+tmpfs                          /var/tmp        tmpfs   defaults,noatime                0       0
+

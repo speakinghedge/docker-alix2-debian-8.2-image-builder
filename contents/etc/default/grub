@@ -1,0 +1,11 @@
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=0
+GRUB_DISTRIBUTOR="Debian Jessie 8.2"
+
+GRUB_CMDLINE_LINUX_DEFAULT="quiet"
+GRUB_CMDLINE_LINUX="console=tty0 console=ttyS0,38400n8"
+
+GRUB_TERMINAL="console serial"
+GRUB_SERIAL_COMMAND="serial --unit=0 --speed=38400 --word=8 --parity=no --stop=1"
+GRUB_RECORDFAIL_TIMEOUT=0
+
