@@ -27,7 +27,9 @@ USER_PASSWD="user"
 USER_GROUP_SUDO=1
 ROOT_PASSWD="root"
 GETTY_ON_TTYS0=1
-
+# don't change unless you know what you do
+CHROOT_MOUNTS="dev dev/pts proc run sys"
+CHROOT_MOUNTS_UMOUNT="sys run proc dev/pts dev"
 #################################################################
 
 if [ ! -d ${CHROOT_DIR} ] ; then
@@ -126,8 +128,9 @@ EOF2
 	rm -f /base_setup.sh
 EOF
 
-echo "bind-mount special directories..."
-for special_dir in dev dev/pts proc run sys ; do
+echo "bind-mount special directories for chroot..."
+for special_dir in ${CHROOT_MOUNTS} ; do
+	echo "mount /${special_dir}"
 	mount -o bind "/${special_dir}" "${CHROOT_DIR}/${special_dir}" 1>/dev/null
 done
 
@@ -206,7 +209,7 @@ if [ ${GETTY_ON_TTYS0} -ne 0 ] ; then
 fi
 
 echo "umount special directories..."
-for special_dir in sys run proc dev/pts dev ; do
+for special_dir in ${CHROOT_MOUNTS_UMOUNT}; do
 	umount "${CHROOT_DIR}/${special_dir}" 1>/dev/null
 done
 
